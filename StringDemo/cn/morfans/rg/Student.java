@@ -1,5 +1,7 @@
 package cn.morfans.rg;
 
+//by:袁俊杰
+
 public class Student {
     public String[] studentList;
     /**
@@ -57,6 +59,20 @@ public class Student {
             studentList[i] = studentList[i + 1]; // 不是最后一个元素则用后边的覆盖
         }
         currentCount--;
+        return true;
+    }
+
+    /**
+     * 通过学号搜索学生并打印
+     * @param id 学生学号
+     */
+    public boolean searchStudentById(int id){
+        int index = searchStudent(id);
+        if (index == -1){
+            System.out.println("错误，无法找到学号为"+id+"的学生");
+            return false;
+        }
+        System.out.println(studentList[index]);
         return true;
     }
 

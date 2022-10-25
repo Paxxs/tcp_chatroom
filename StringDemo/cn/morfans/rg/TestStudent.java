@@ -8,13 +8,28 @@ import java.lang.reflect.Method;
 
 public class TestStudent {
 
-
     private Student initStudent() {
         Student t = new Student(3);
         t.addStudent(1, "pax");
         t.addStudent(2, "paxx");
         t.addStudent(3, "paxxs");
         return t;
+    }
+
+    @Test
+    public void testChangeName(){
+        Student t = initStudent();
+        String expected = "2;java";
+        t.changeName(2,"java");
+        assertEquals(expected,t.studentList[1]);
+    }
+
+    @Test
+    public void testSearchStudentById(){
+        Student t = initStudent();
+        Boolean expected = true;
+
+        assertEquals(expected,t.searchStudentById(2)); // 2;paxx
     }
 
     @Test
