@@ -12,6 +12,12 @@ public class Student {
         currentCount = 0;
     }
 
+    /**
+     * 添加新的学生
+     * @param id 学号
+     * @param name 姓名
+     * @return 是否成功
+     */
     public boolean addStudent(int id, String name) {
         // TODO：判断数组是否够用
         studentList[currentCount] = String.format("%d;%s", id, name);
@@ -19,7 +25,12 @@ public class Student {
         return true;
     }
 
-    
+    /**
+     * 修改学生姓名
+     * @param id 学号
+     * @param name 待修改的姓名
+     * @return 是否修改成功
+     */
     public boolean changeName(int id, String name) {
         int index = searchStudent(id);
         if (index == -1)
@@ -28,6 +39,11 @@ public class Student {
         return true;
     }
 
+    /**
+     * 删除一名学生
+     * @param id 学号
+     * @return 是否删除成功
+     */
     public boolean deleteStudent(int id) {
         // 经过google, java并没有提供删除数组中指定元素的功能
         int index = searchStudent(id);
@@ -50,7 +66,7 @@ public class Student {
      * @param id 学号
      * @return 数组所在的 index
      */
-    public int searchStudent(int id) {
+    private int searchStudent(int id) {
         for (int i = 0; i < currentCount; i++)
             if (id == getId(i))
                 return i;
@@ -63,7 +79,7 @@ public class Student {
      * @param index 数组index从0开始
      * @return id的值
      */
-    public int getId(int index) {
+    private int getId(int index) {
         int position = studentList[index].indexOf(';');
         String id = studentList[index].substring(0, position);
         return Integer.parseInt(id);

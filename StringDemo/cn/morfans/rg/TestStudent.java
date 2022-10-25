@@ -4,6 +4,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+import java.lang.reflect.Method;
+
 public class TestStudent {
 
 
@@ -16,25 +18,49 @@ public class TestStudent {
     }
 
     @Test
-    public void testgetId() {
+    public void testgetId() throws Exception {
         Student t = initStudent();
         int expected0 = 1;
         int expected1 = 2;
         int expected2 = 3;
-        assertEquals(expected0, t.getId(0));
-        assertEquals(expected1, t.getId(1));
-        assertEquals(expected2, t.getId(2));
+
+        // reflect
+        // 获取class object
+        Class<Student> stuClass = Student.class;
+        // get method
+        Method declareMethod = stuClass.getDeclaredMethod("getId", int.class);
+        declareMethod.setAccessible(true);
+        Object result0 = declareMethod.invoke(t, 0);
+        Object result1 = declareMethod.invoke(t, 1);
+        Object result2 = declareMethod.invoke(t, 2);
+        declareMethod.setAccessible(false);
+
+        assertEquals(expected0, result0);
+        assertEquals(expected1, result1);
+        assertEquals(expected2, result2);
     }
 
     @Test
-    public void testSearchStudent() {
+    public void testSearchStudent() throws Exception {
+        //获取目标类的实例
         Student t = initStudent();
         int expect0 = 0; // if search 1
         int expect1 = 1; // if search 2
         int expect2 = 2; // if search 3
-        assertEquals(expect0, t.searchStudent(1));
-        assertEquals(expect1, t.searchStudent(2));
-        assertEquals(expect2, t.searchStudent(3));
+
+        //获取目标类的class对象
+        Class<Student> clazz = Student.class;
+        // 获取方法
+        Method declareMethod = clazz.getDeclaredMethod("searchStudent", int.class);
+        declareMethod.setAccessible(true);
+        Object result = declareMethod.invoke(t, 1);
+        Object result2 = declareMethod.invoke(t, 2);
+        Object result3 = declareMethod.invoke(t, 3);
+        declareMethod.setAccessible(false);
+
+        assertEquals(expect0, result);
+        assertEquals(expect1, result2);
+        assertEquals(expect2, result3);
     }
 
     @Test
