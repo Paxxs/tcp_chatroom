@@ -19,22 +19,21 @@ public class ServerPlus {
 
         try {
             serverSocket = new ServerSocket(8080);
-            InetAddress address;
-            byte[] datas;
-            String str;
-            int num;
+            String name; // 客户端名称
+            byte[] datas; // 一次性读取载体大小
+            int num; // 真正读取大小
+            String strInput; // 客户端发来的信息文本
             while (true) {
                 socket = serverSocket.accept();
-                address = socket.getInetAddress();
-                System.out.println(":: 客户端 "+ address.getHostAddress() + " 连接成功");
+                name = generateClientName(socket);
+                System.out.println(":: " + name + " 连接成功!");
                 in = socket.getInputStream();
                 datas = new byte[100];
                 num = in.read(datas);
-                str = new String(datas, 0, num);
-                System.out.println("客户端：" + str);
+                strInput = new String(datas, 0, num);
+                System.out.println(name + ": " + strInput);
 
-                if (str.equals("你食不食油饼"))
-                {
+                if (strInput.equals("你食不食油饼")) {
                     System.out.println(":: 服务端被控终止");
                     break;
                 }
@@ -52,5 +51,15 @@ public class ServerPlus {
             }
 
         }
+    }
+
+    /**
+     * 生成客户端名称
+     * @param s socket
+     * @return 名称
+     */
+    private static String generateClientName(Socket s) {
+        InetAddress address = s.getInetAddress(); // 客户端地址
+        return String.format("客户端[%s]", address.getHostAddress()); // 客户端名称
     }
 }
