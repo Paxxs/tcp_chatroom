@@ -2,6 +2,7 @@ package cn.morfans.tcpDemo;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -14,6 +15,8 @@ public class ServerPlus {
     // 双向通讯
     public static void main(String[] args) {
         InputStream in = null; // 数据输入流
+        OutputStream out = null; // 输出流
+
         Socket socket = null; // 数据传输对象
         ServerSocket serverSocket = null; // 服务连接对象
 
@@ -33,6 +36,11 @@ public class ServerPlus {
                 strInput = new String(datas, 0, num);
                 System.out.println(name + ": " + strInput);
 
+                // 回复客户端
+                out = socket.getOutputStream();
+                String text = "你干嘛！！";
+                out.write(text.getBytes());
+
                 if (strInput.equals("你食不食油饼")) {
                     System.out.println(":: 服务端被控终止");
                     break;
@@ -44,6 +52,8 @@ public class ServerPlus {
             try {
                 assert in != null;
                 in.close();
+                assert out != null;
+                out.close();
                 serverSocket.close();
                 socket.close();
             } catch (IOException e) {
