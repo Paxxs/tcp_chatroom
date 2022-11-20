@@ -17,7 +17,7 @@ public class Server {
      */
     private final ArrayList<ClientThread> clientList;
     private boolean keepGoing;
-    private SimpleDateFormat sdf;
+    private final SimpleDateFormat sdf;
 
     public Server(int port) {
         this.port = port;
@@ -56,6 +56,10 @@ public class Server {
         }
     }
 
+    protected void stop() {
+        keepGoing = false;
+    }
+
     /**
      * 服务端日志输出
      *
@@ -64,6 +68,62 @@ public class Server {
     private void log(String msg) {
         String nowTime = sdf.format(new Date());
         System.out.println(nowTime + " " + msg);
+    }
+
+    /**
+     * 服务端发送广播信息，自动判断（群聊）、私聊。
+     * 私聊 msg 传入检测格式 UserName:[space]@name[space]信息。判断字段1开头是否为 @
+     *
+     * @param msg 发送的信息
+     * @return 私聊是否发送成功，群聊都会返回 true
+     */
+    private synchronized boolean broadcast(String msg) {
+        String time = sdf.format(new Date());
+        String[] wMsg = msg.split(" ", 3);
+        boolean isPrivateChat = wMsg[1].charAt(0) == '@';
+
+        if (isPrivateChat) {
+            String toUserName = wMsg[1].substring(1);
+            msg = wMsg[0] + wMsg[2]; //  合成：UserName: + 信息
+            String formatMsg = time + " [PM]" + msg + "\n";
+            boolean isExist = false; // 是否找到用户
+
+            // 对着名字查找客户端
+            for (int i = clientList.size(); --i >= 0; ) { // 从 0 开始，所以先要 size -1
+                ClientThread ct = clientList.get(i);
+                if (ct.getUserName().equals(toUserName)) {
+                    // 找到了对应的用户
+                    sendToClient(ct, i, formatMsg);
+                    isExist = true;
+                    break;
+                }
+            }
+            return isExist;
+        } else { // 群发不保证都发到，故不用返回 false
+            // 遍历给所有客户端发送
+            String formatMsg = time + "" + msg + "\n";
+            System.out.println(formatMsg);
+            for (int i = clientList.size(); --i >= 0; ) { // 从 0 开始，所以先要 size -1
+                ClientThread ct = clientList.get(i);
+                sendToClient(ct, i, formatMsg);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 给客户端发送消息，失败则移除客户端
+     *
+     * @param ct              客户端线程
+     * @param clientListIndex ClientList 索引(所在客户端）
+     * @param msg             发送的信息
+     */
+    private void sendToClient(ClientThread ct, int clientListIndex, String msg) {
+        if (!ct.sendMsg(msg)) {
+            // 如果失败大概率是寄了，直接让其下线吧
+            clientList.remove(clientListIndex);
+            log("客户端 " + ct.getUserName() + " 断开了，已从列表中移除！");
+        }
     }
 
     /**
@@ -143,6 +203,9 @@ public class Server {
                     case ChatMessage.LOGOUT -> keepGoing = false;
                 }
             }
+            // TODO 从列表移除客户端
+            // 因为要从 client列表中移除，所以还需要找到其对应的id
+            // TODO 广播下线通知
             // 结束就关闭了
             close();
         }
