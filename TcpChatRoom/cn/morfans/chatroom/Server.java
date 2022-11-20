@@ -127,6 +127,27 @@ public class Server {
     }
 
     /**
+     * 从 clientList 中移除客户端，用于线程结束时候移除客户端
+     *
+     * @param id   客户端唯一id
+     */
+    private synchronized void removeClient(int id) {
+        String disconnectClient = "";
+        boolean isExist = false;
+        for (int i = 0; i < clientList.size(); i++) {
+            ClientThread ct = clientList.get(i);
+            if (id == ct.id) {
+                disconnectClient = ct.userName;
+                clientList.remove(i);
+                isExist = true;
+                break;
+            }
+        }
+        if (isExist)
+            broadcast("*** " + disconnectClient + "离开了聊天室");
+    }
+
+    /**
      * 处理客户端的线程
      */
     public class ClientThread extends Thread {
@@ -195,18 +216,33 @@ public class Server {
                 String message = chatMessage.getMessage();
                 switch (chatMessage.getType()) {
                     case ChatMessage.MESSAGE -> {
-                        //TODO　处理发消息
+                        //处理发消息
+                        // 群发都会返回 true,返回flase 只有可能是私聊
+                        // 格式 UserName:[space]@name[space]信息
+                        boolean confirm = broadcast(userName + ": " + message);
+                        if (!confirm) {
+                            // 私聊出现问题直接回怼客户端
+                            String msg = "***" + "抱歉，你pm的用户不存在...";
+                            sendMsg(msg);
+                        }
                     }
                     case ChatMessage.WHO -> {
-                        // TODO　查询在线的人
+                        // 生成在线列表
+                        sendMsg(sdf.format(new Date()) + " 当前在线的用户:\n");
+                        for (int i = 0; i < clientList.size(); i++) {
+                            ClientThread ct = clientList.get(i);
+                            sendMsg((i + 1) + ") " + ct.userName + " 上线时间：" + ct.date);
+                        }
                     }
-                    case ChatMessage.LOGOUT -> keepGoing = false;
+                    case ChatMessage.LOGOUT -> {
+                        log(userName + "通过下线请求下线！");
+                        keepGoing = false;
+                    }
                 }
             }
-            // TODO 从列表移除客户端
-            // 因为要从 client列表中移除，所以还需要找到其对应的id
-            // TODO 广播下线通知
             // 结束就关闭了
+            // 因为要从 client列表中移除，所以还需要找到其对应的id
+            removeClient(id);
             close();
         }
 
