@@ -25,6 +25,32 @@ public class Server {
         this.sdf = new SimpleDateFormat("HH:mm:ss");
     }
 
+    public static void main(String[] args) {
+        int portNum = 3190;
+        switch (args.length) {
+            case 1 -> {
+                try {
+                    portNum = Integer.parseInt(args[0]);
+                } catch (Exception e) {
+                    System.out.println("错误的端口号！");
+                    System.out.println("Usage:");
+                    System.out.println("Server [portNum]");
+                }
+            }
+            case 0 -> {
+            }
+            default -> {
+                // 如果有很多参数，报错结束
+                System.out.println("Usage:");
+                System.out.println("Server [portNum]");
+                return;
+            }
+        }
+
+        Server server = new Server(portNum);
+        server.start();
+    }
+
     /**
      * 启动服务端
      */
@@ -129,7 +155,7 @@ public class Server {
     /**
      * 从 clientList 中移除客户端，用于线程结束时候移除客户端
      *
-     * @param id   客户端唯一id
+     * @param id 客户端唯一id
      */
     private synchronized void removeClient(int id) {
         String disconnectClient = "";
