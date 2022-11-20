@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Date;
 import java.util.Scanner;
 
 public class Client {
@@ -25,9 +26,34 @@ public class Client {
         try {
             socket = new Socket(serverAddr, port);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log("连接服务器错误：" + e);
+            return false;
         }
+        try {
+            // 接受服务端消息和输出给服务端
+            sInput = new ObjectInputStream(socket.getInputStream());
+            sOutput = new ObjectOutputStream(socket.getOutputStream());
+        } catch (IOException e) {
+//            throw new RuntimeException(e);
+            log("创建输入输出流失败：" + e);
+            return false;
+        }
+
+        try {
+            // 最先发送用户名给服务端
+            sOutput.writeObject(userName);
+        } catch (IOException e) {
+            log("登录服务器过程出错：" + e);
+            // TODO 断连
+            return false;
+        }
+        // 监听服务端
+        new ListendFromServer().start();
         return true;
+    }
+
+    private void log(String msg) {
+        System.out.println(new Date() + " " + msg);
     }
 
     public static void main(String[] args) {
@@ -64,7 +90,7 @@ public class Client {
         }
         Client client = new Client(server, portNum, user);
 
-        if (!client.start())
+        if (!client.start()) // 没有连上服务端就退出
             return;
 
         System.out.println("\n 😀你好哟，" + user + "! 欢迎来到 Paxos 的聊天室~");
@@ -91,4 +117,20 @@ public class Client {
         scanner.close();
         // 销毁客户端
     }// End of Client main
+
+    class ListendFromServer extends Thread {
+        public void run() {
+            while (true) {
+                try {
+                    String msg = (String) sInput.readObject();
+                    // 获取到信息就直接输出即可
+                    System.out.println(msg);
+
+                } catch (IOException | ClassNotFoundException e) {
+                    log("***" + "服务器断连：" + e);
+                    break;
+                }
+            }
+        }
+    } // End of ListendFromServer Class
 }
