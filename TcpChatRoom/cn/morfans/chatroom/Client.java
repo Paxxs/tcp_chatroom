@@ -29,6 +29,9 @@ public class Client {
             log("连接服务器错误：" + e);
             return false;
         }
+        String message = "Connection accepted " + socket.getInetAddress() + " : " + socket.getPort();
+        log(message);
+        log(":: 创建输出输出流");
         try {
             // 接受服务端消息和输出给服务端
             sInput = new ObjectInputStream(socket.getInputStream());
@@ -36,20 +39,39 @@ public class Client {
         } catch (IOException e) {
 //            throw new RuntimeException(e);
             log("创建输入输出流失败：" + e);
+            close();
             return false;
         }
-
+        // 监听服务端
+        new ListendFromServer().start();
         try {
             // 最先发送用户名给服务端
             sOutput.writeObject(userName);
         } catch (IOException e) {
             log("登录服务器过程出错：" + e);
-            // TODO 断连
+            close(); // 这里创建了输入输出流了。所以关闭
             return false;
         }
-        // 监听服务端
-        new ListendFromServer().start();
         return true;
+    }
+
+    public void sendToServer(ChatMessage chatMessage){
+        try {
+            sOutput.writeObject(chatMessage);
+        } catch (IOException e) {
+            log("发送讯息给服务端出现错误："+e);
+//            throw new RuntimeException(e);
+        }
+    }
+
+    public void close(){
+        try {
+            sInput.close();
+            sOutput.close();
+            socket.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void log(String msg) {
@@ -89,7 +111,6 @@ public class Client {
             user = scanner.nextLine();
         }
         Client client = new Client(server, portNum, user);
-
         if (!client.start()) // 没有连上服务端就退出
             return;
 
@@ -104,18 +125,22 @@ public class Client {
             System.out.println("输入消息>");
             String msg = scanner.nextLine();
             if (msg.equalsIgnoreCase("logout")) {
-                // TODO 发送退出通知到服务端
+                // 特殊消息后边的都是看不到的，随便写
+                client.sendToServer(new ChatMessage(ChatMessage.LOGOUT,"正在将你退出登录..."));
                 break;
             } else if (msg.equalsIgnoreCase("who")) {
-                // TODO 发送查询在线列表
+                // 特殊消息后边的都是看不到的，随便写
+                client.sendToServer(new ChatMessage(ChatMessage.WHO,"看看谁在线..."));
             } else {
-                // TODO 正常发送消息
+                // 正常发送消息
+                client.sendToServer(new ChatMessage(ChatMessage.MESSAGE,msg));
             }
         }
 
         // 跳出循环就直接寄了
         scanner.close();
         // 销毁客户端
+        client.close();
     }// End of Client main
 
     class ListendFromServer extends Thread {
@@ -127,7 +152,7 @@ public class Client {
                     System.out.println(msg);
 
                 } catch (IOException | ClassNotFoundException e) {
-                    log("***" + "服务器断连：" + e);
+                    log("[通知] " + "服务器断连：" + e);
                     break;
                 }
             }
