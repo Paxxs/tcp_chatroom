@@ -28,23 +28,23 @@ public class Server {
     public static void main(String[] args) {
         int portNum = 3190;
         switch (args.length) {
-            case 1 -> {
+            case 1:
                 try {
                     portNum = Integer.parseInt(args[0]);
                 } catch (Exception e) {
                     System.out.println("错误的端口号！");
                     System.out.println("Usage:");
                     System.out.println("Server [portNum]");
+                    return;
                 }
-            }
-            case 0 -> {
-            }
-            default -> {
+            case 0:
+                break;
+            default:
                 // 如果有很多参数，报错结束
                 System.out.println("Usage:");
                 System.out.println("Server [portNum]");
                 return;
-            }
+
         }
 
         Server server = new Server(portNum);
@@ -127,7 +127,7 @@ public class Server {
             return isExist;
         } else { // 群发不保证都发到，故不用返回 false
             // 遍历给所有客户端发送
-            String formatMsg = time + "" + msg + "\n";
+            String formatMsg = time + " " + msg + "\n";
             System.out.println(formatMsg);
             for (int i = clientList.size(); --i >= 0; ) { // 从 0 开始，所以先要 size -1
                 ClientThread ct = clientList.get(i);
@@ -170,7 +170,7 @@ public class Server {
             }
         }
         if (isExist)
-            broadcast("*** " + disconnectClient + "离开了聊天室");
+            broadcast("[通知] " + disconnectClient + "离开了聊天室");
     }
 
     /**
@@ -204,12 +204,15 @@ public class Server {
             this.id = ++uniqueID;
             System.out.println("创建线程输入输出流");
             try {
-                this.sInput = new ObjectInputStream(socket.getInputStream());
                 this.sOutput = new ObjectOutputStream(socket.getOutputStream());
+                this.sInput = new ObjectInputStream(socket.getInputStream());
                 this.userName = (String) sInput.readObject();
                 //TODO: 广播上线通知 userName
+                broadcast("[通知] " + userName + "加入了聊天室");
             } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
+//                throw new RuntimeException(e);
+                log("创建输入输出流失败：" + e);
+                e.printStackTrace();
             }
             this.date = new Date() + "\n";
         }
@@ -228,12 +231,9 @@ public class Server {
             while (keepGoing) {
                 try {
                     chatMessage = (ChatMessage) sInput.readObject();
-                } catch (IOException e) {
+                } catch (IOException | ClassNotFoundException e) {
                     log(userName + " 读入流发生错误:" + e);
 //                    throw new RuntimeException(e);
-                    break;
-                } catch (ClassNotFoundException e2) {
-                    e2.printStackTrace();
                     break;
                 }
                 /*
@@ -241,29 +241,29 @@ public class Server {
                  */
                 String message = chatMessage.getMessage();
                 switch (chatMessage.getType()) {
-                    case ChatMessage.MESSAGE -> {
+                    case ChatMessage.MESSAGE:
                         //处理发消息
                         // 群发都会返回 true,返回flase 只有可能是私聊
                         // 格式 UserName:[space]@name[space]信息
                         boolean confirm = broadcast(userName + ": " + message);
                         if (!confirm) {
                             // 私聊出现问题直接回怼客户端
-                            String msg = "***" + "抱歉，你pm的用户不存在...";
+                            String msg = "*** " + "抱歉，你pm的用户不存在...";
                             sendMsg(msg);
                         }
-                    }
-                    case ChatMessage.WHO -> {
+                        break;
+                    case ChatMessage.WHO:
                         // 生成在线列表
                         sendMsg(sdf.format(new Date()) + " 当前在线的用户:\n");
                         for (int i = 0; i < clientList.size(); i++) {
                             ClientThread ct = clientList.get(i);
                             sendMsg((i + 1) + ") " + ct.userName + " 上线时间：" + ct.date);
                         }
-                    }
-                    case ChatMessage.LOGOUT -> {
+                        break;
+                    case ChatMessage.LOGOUT:
                         log(userName + "通过下线请求下线！");
                         keepGoing = false;
-                    }
+                        break;
                 }
             }
             // 结束就关闭了
